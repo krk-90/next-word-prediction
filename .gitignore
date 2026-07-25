@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# Build and distribution directories
+build/
+dist/
+*.egg-info/
+
+# Logs
+*.log
+
+# Data files (optional – keep only small sample datasets in repo)
+*.csv
+*.tsv
+*.dat
+*.npz
+*.npy
+
+# Large model files
+*.h5
+*.pt
+*.pth
+*.onnx
+
+# IDE settings
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
