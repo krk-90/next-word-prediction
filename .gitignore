@@ -31,7 +31,6 @@ dist/
 # Large model files
 *.h5
 *.pt
-*.pth
 *.onnx
 
 # IDE settings
