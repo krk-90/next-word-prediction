@@ -5,35 +5,40 @@ import spacy
 from torch.nn.utils.rnn import pad_sequence
 
 class preprocess:
-    def __init__(self,vocab):
+    def __init__(self,vocab,seq_length = 5):
         self.vocab = vocab
+        self.seq_length = seq_length
         self.nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
         self.pad_idx = self.vocab["<PAD>"]
         self.unk_idx = self.vocab["<UNK>"]
 
     def text_to_seq(self,text):
         doc = self.nlp(text)
-        return[self.vocab.get(token.text.lower(),self.unk_idx) for token in doc if not token.is_space]
+        tokens = [token.text.lower() for token in doc if not token.is_space]
+        if len(tokens) < self.seq_length:
+            raise ValueError(f"need at leasst {self.seq_length} words,input has {len(tokens)}")
 
-    def pad_batch(self,batch):
-        tensors = [torch.tensor(seq,dtype=torch.long) for seq in batch]
-        return pad_sequence(tensors,batch_first=True,padding_value=self.pad_idx)
-      
+        tokens = tokens[-self.seq_length:]
+        return [self.vocab.get(tok,self.unk_idx) for tok in tokens]
+
+    def to_tensor(self,seq):
+        return torch.tensor([seq],dtype=torch.long)
+    
 def main():
     file_path = Path(__file__).resolve().parent.parent
     path = file_path/"Data"/"tokens.pkl"
     with open(path,"rb") as f:
         vocab = pickle.load(f)
+
     preprocessor = preprocess(vocab=vocab)  
 
-    seq =input("enter text:")
+    text =input("enter text:")
 
-    batch = preprocessor.text_to_seq(seq)
-
-    padded_batch = preprocessor.pad_batch([batch])
-
-    print("Token IDs:", batch)
-    print("Padded tensor:", padded_batch)
-    print("Shape:", padded_batch.shape)
+    seq = preprocessor.text_to_seq(text)
+    x = preprocessor.to_tensor(seq)
+    print("Token IDs:", seq)
+    print("Tensor:", x)
+    print("Shape:", x.shape)
+    return x
 if __name__ == "__main__":
     main()
