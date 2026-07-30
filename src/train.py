@@ -58,7 +58,7 @@ def train():
     print(f"Total parameters: {total_params}")
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {trainable_params}")
-    check_point_path = Path(__file__).resolve().parent / "Data" / "params.pth"
+    check_point_path = Path(__file__).resolve().parents[1] / "Data" / "params.pth"
     check_point_path.parent.mkdir(parents=True, exist_ok=True)    
     trained_model = train_model(model=model,train_loader=train_loader,criterion=criterion,optimizer=optimizer,device=device,check_point_path=check_point_path)
     return trained_model,criterion
