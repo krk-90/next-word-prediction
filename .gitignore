@@ -28,11 +28,6 @@ dist/
 *.npz
 *.npy
 
-# Large model files
-*.h5
-*.pt
-*.onnx
-
 # IDE settings
 .vscode/
 .idea/
