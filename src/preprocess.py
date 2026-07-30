@@ -10,9 +10,9 @@ class preprocess:
         self.nlp = spacy.load("en_core_web_sm",disable=["parser", "ner"])
 
     def load_data(self):
-        data_path = Path("/kaggle/input/datasets/vivekmettu/wikitext2-data")
-        train_data_path = data_path + "/train.txt"
-        test_data_path = data_path + "/test.txt"
+        data_path = Path(__file__).resolve().parents[1] / "Data"        
+        train_data_path = data_path / "train.txt"
+        test_data_path = data_path / "test.txt"
         with open(train_data_path, "r", encoding="utf-8") as f:
             train_text = f.read()
         with open(test_data_path,"r",encoding="utf-8") as f:
@@ -51,7 +51,10 @@ def main():
     preprocessor = preprocess()
     train_data,test_data = preprocessor.load_data()
     train_tokens, test_tokens, vocab = preprocessor.vocabulary(train_data,test_data)
-    with open("tokens.pkl","wb") as f:
+    data_path = Path(__file__).resolve().parents[1] / "Data"        
+    save_path = data_path/ "tokens.pkl"
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(save_path, "wb") as f:
         pickle.dump(vocab,f)
 
     train_encoded = preprocessor.encode_tokens(train_tokens, vocab)
@@ -67,7 +70,7 @@ def main():
     x_test,y_test = torch.tensor(test_seqs,dtype=torch.long),torch.tensor(test_labels,dtype=torch.long)
     test_dataset = TensorDataset(x_test,y_test)
     test_loader = DataLoader(test_dataset,batch_size=64,shuffle=False)
-    return train_loader,test_loader
+    return train_loader,test_loader,vocab
 
 if __name__ == "__main__":
     main()

@@ -25,5 +25,3 @@ class Hybrid_model(nn.Module):
         x = torch.cat((lstm_last, gru_last), dim=-1)
         x = self.fc(x)
         return x
-
-    
