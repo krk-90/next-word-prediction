@@ -45,4 +45,4 @@ def model():
     hybrid_moded.eval()
     return hybrid_moded
 if __name__ == "__main__":
-    MODEL = model()
+    model()
