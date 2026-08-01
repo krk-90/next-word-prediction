@@ -8,17 +8,18 @@ class Hybrid_model(nn.Module):
         super(Hybrid_model,self).__init__()
 
         self.embedding = nn.Embedding(tokens_size,embedded_dim)
+        self.embedding_dropout = nn.Dropout(0.2)
         self.lstm = nn.LSTM(embedded_dim,hidden_dim,batch_first=True)
         self.gru = nn.GRU(embedded_dim,hidden_dim,batch_first=True)
-
-        self.fc =nn.Sequential(
-            nn.Linear(hidden_dim*2,64),
-            nn.ReLU(),
-            nn.Linear(64,tokens_size)
-        )
-
+        
+        self.fc = nn.Sequential(
+                    nn.Linear(hidden_dim*2,256),
+                    nn.ReLU(),
+                    nn.Dropout(0.3),
+                    nn.Linear(256,tokens_size))
+        
     def forward(self,x):
-        x = self.embedding(x)
+        x = self.embedding_dropout(self.embedding(x))
         lstm_output,_ = self.lstm(x)    
         gru_output,_ = self.gru(x)
         lstm_last = lstm_output[:,-1,:]
@@ -28,7 +29,7 @@ class Hybrid_model(nn.Module):
 
 def model():
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    file_path = Path(__file__).resolve().parents[2]
+    file_path = Path(__file__).resolve().parents[1]
     tokens_path = file_path/"Data"/"tokens.pkl"
     params_path = file_path/"Data"/"params.pth"
     if not (tokens_path.exists() and params_path.exists()):

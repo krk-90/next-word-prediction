@@ -8,7 +8,7 @@ import pickle
 from pathlib import Path
 
 from backend.model import model
-from preprocess import Preprocess
+from backend.preprocess import Preprocess
 
 MODEL = None
 VOCAB = None
@@ -36,6 +36,7 @@ app = FastAPI(title="Next word prediction",version="1.0.0",lifespan=lifespan)
 
 class Input_text(BaseModel):
     text : str
+    num_words: int = 1
 
 class Output(BaseModel):
     predicted_text : str
@@ -58,15 +59,22 @@ async def predict(user_input:Input_text):
 
     try:
         preprocessor = Preprocess(vocab=VOCAB)
-        seq = preprocessor.text_to_seq(user_input.text)
-        x = preprocessor.to_tensor(seq)
-        with torch.no_grad():
-            output = MODEL(x)
-            predict_idx = output.argmax(dim= -1).item()
+        text = user_input.text
+        generated_words = []
 
-        predict_word =  IDX2WORD.get(predict_idx,"<UNK>")
+        for _ in range(user_input.num_words):
+            seq = preprocessor.text_to_seq(text)
+            x = preprocessor.to_tensor(seq)
+            with torch.no_grad():
+                output = MODEL(x)
+                probs = torch.softmax(output, dim=-1)
+                predict_idx = torch.multinomial(probs, num_samples=1).item()
 
-        return  {"predicted_text": predict_word}  
+            predict_word =  IDX2WORD.get(predict_idx,"<UNK>")
+            generated_words.append(predict_word)
+
+            text = text + " " + predict_word
+        return  {"predicted_text": " ".join(generated_words)}  
 
     except Exception as e:
         import traceback
