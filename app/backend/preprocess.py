@@ -1,24 +1,26 @@
 from pathlib import Path
 import pickle
 import torch
-import spacy
+import re
 
 class Preprocess:
-    def __init__(self,vocab,seq_length = 5):
+    def __init__(self, vocab, seq_length=5):
         self.vocab = vocab
         self.seq_length = seq_length
-        self.nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
         self.pad_idx = self.vocab["<PAD>"]
         self.unk_idx = self.vocab["<UNK>"]
 
-    def text_to_seq(self,text):
-        doc = self.nlp(text)
-        tokens = [token.text.lower() for token in doc if not token.is_space]
+    def tokenize(self, text: str):
+        text = text.lower()
+        return re.findall(r"\w+|[^\w\s]", text)
+
+    def text_to_seq(self, text):
+        tokens = self.tokenize(text)
         if len(tokens) < self.seq_length:
             raise ValueError(f"need at least {self.seq_length} words,input has {len(tokens)}")
 
         tokens = tokens[-self.seq_length:]
-        return [self.vocab.get(tok,self.unk_idx) for tok in tokens]
+        return [self.vocab.get(tok, self.unk_idx) for tok in tokens]
 
     def to_tensor(self,seq):
         return torch.tensor([seq],dtype=torch.long)

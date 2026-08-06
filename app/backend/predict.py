@@ -1,5 +1,3 @@
-import os
-import sys
 import torch
 from fastapi import FastAPI,HTTPException
 from pydantic import BaseModel
@@ -7,30 +5,29 @@ from contextlib import asynccontextmanager
 import pickle
 from pathlib import Path
 
-from backend.model import model
-from backend.preprocess import Preprocess
+from .model import model
+from .preprocess import Preprocess
 
 MODEL = None
 VOCAB = None
 IDX2WORD = None
 
 @asynccontextmanager
-async def lifespan(app:FastAPI):
-    global MODEL,VOCAB,IDX2WORD
+async def lifespan(app: FastAPI):
+    global MODEL, VOCAB, IDX2WORD, PREPROCESSOR
     try:
         MODEL = model()
         file_path = Path(__file__).resolve().parent.parent
         path = file_path / "Data" / "tokens.pkl"
         with open(path, "rb") as f:
             VOCAB = pickle.load(f)
-
         IDX2WORD = {idx: word for word, idx in VOCAB.items()}
+        PREPROCESSOR = Preprocess(vocab=VOCAB)  
         print("Model and vocab loaded successfully")
-
     except Exception as e:
-        print(f"Error in loading model :{e}")   
+        print(f"Error in loading model: {e}")
         raise
-    yield 
+    yield
 
 app = FastAPI(title="Next word prediction",version="1.0.0",lifespan=lifespan)   
 
@@ -58,23 +55,22 @@ async def predict(user_input:Input_text):
         raise HTTPException(status_code=500,detail="Model not loaded.")
 
     try:
-        preprocessor = Preprocess(vocab=VOCAB)
         text = user_input.text
         generated_words = []
 
+        seq = PREPROCESSOR.text_to_seq(text)
         for _ in range(user_input.num_words):
-            seq = preprocessor.text_to_seq(text)
-            x = preprocessor.to_tensor(seq)
+            x = PREPROCESSOR.to_tensor(seq)
             with torch.no_grad():
                 output = MODEL(x)
                 probs = torch.softmax(output, dim=-1)
                 predict_idx = torch.multinomial(probs, num_samples=1).item()
 
-            predict_word =  IDX2WORD.get(predict_idx,"<UNK>")
+            predict_word = IDX2WORD.get(predict_idx, "<UNK>")
             generated_words.append(predict_word)
+            seq = seq[1:] + [predict_idx]
 
-            text = text + " " + predict_word
-        return  {"predicted_text": " ".join(generated_words)}  
+        return {"predicted_text": " ".join(generated_words)}
 
     except Exception as e:
         import traceback
