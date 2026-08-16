@@ -3,6 +3,6 @@ fastapi==0.139.0
 uvicorn==0.51.0
 pydantic==2.13.4
 spacy==3.8.13
-
+slowapi==0.1.10
 # If you use the training/preprocessing pipeline in src/, download the spaCy model separately:
 # python -m spacy download en_core_web_sm
