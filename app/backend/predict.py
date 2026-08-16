@@ -1,9 +1,13 @@
 import torch
-from fastapi import FastAPI,HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI,HTTPException,Request
+from pydantic import BaseModel,field_validator
 from contextlib import asynccontextmanager
 import pickle
 from pathlib import Path
+
+from  slowapi import Limiter,_rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from .model import model
 from .preprocess import Preprocess
@@ -11,6 +15,8 @@ from .preprocess import Preprocess
 MODEL = None
 VOCAB = None
 IDX2WORD = None
+
+limiter = Limiter(key_func= get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,10 +36,19 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="Next word prediction",version="1.0.0",lifespan=lifespan)   
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded,_rate_limit_exceeded_handler)
 
 class Input_text(BaseModel):
     text : str
     num_words: int = 1
+
+    @field_validator("num_words")
+    @classmethod
+    def cap_num_words(cls,v):
+        if v <1 or v>20:
+            raise ValueError("num_words must be between 1 and 20")
+        return v
 
 class Output(BaseModel):
     predicted_text : str
@@ -50,7 +65,8 @@ def status():
     }
 
 @app.post("/predict/",response_model=Output)
-async def predict(user_input:Input_text):
+@limiter.limit("10/minute")
+async def predict(request:Request,user_input:Input_text):
     if MODEL is None:
         raise HTTPException(status_code=500,detail="Model not loaded.")
 
